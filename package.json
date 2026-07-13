@@ -2,14 +2,19 @@
   "name": "git-annotate",
   "displayName": "Git Annotate",
   "description": "PHPStorm-style Git blame annotation, annotate previous revision, and compare with branch",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "farrugia",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["SCM Providers", "Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "scripts": {
     "build": "bun esbuild.ts",
@@ -47,17 +52,33 @@
     ],
     "menus": {
       "commandPalette": [
-        { "command": "gitAnnotate.showCommit", "when": "false" },
-        { "command": "gitAnnotate.copyHash", "when": "false" }
+        {
+          "command": "gitAnnotate.showCommit",
+          "when": "false"
+        },
+        {
+          "command": "gitAnnotate.copyHash",
+          "when": "false"
+        }
       ],
       "editor/context": [
-        { "command": "gitAnnotate.toggle", "group": "gitAnnotate@1", "when": "editorTextFocus" }
+        {
+          "command": "gitAnnotate.toggle",
+          "group": "gitAnnotate@1",
+          "when": "editorTextFocus"
+        }
       ],
       "editor/lineNumber/context": [
-        { "command": "gitAnnotate.toggle", "group": "gitAnnotate@1" }
+        {
+          "command": "gitAnnotate.toggle",
+          "group": "gitAnnotate@1"
+        }
       ],
       "explorer/context": [
-        { "command": "gitAnnotate.compareWithBranch", "group": "3_compare@1" }
+        {
+          "command": "gitAnnotate.compareWithBranch",
+          "group": "3_compare@1"
+        }
       ]
     },
     "configuration": {
@@ -82,15 +103,33 @@
         },
         "gitAnnotate.dateFormat": {
           "type": "string",
-          "enum": ["iso", "short", "relative"],
-          "enumDescriptions": ["2026-07-12", "07/12", "3mo / 2y / today"],
+          "enum": [
+            "iso",
+            "short",
+            "relative"
+          ],
+          "enumDescriptions": [
+            "2026-07-12",
+            "07/12",
+            "3mo / 2y / today"
+          ],
           "default": "iso",
           "description": "How to render the commit date."
         },
         "gitAnnotate.authorFormat": {
           "type": "string",
-          "enum": ["full", "first", "last", "initials"],
-          "enumDescriptions": ["Patrick Farrugia", "Patrick", "Farrugia", "PF"],
+          "enum": [
+            "full",
+            "first",
+            "last",
+            "initials"
+          ],
+          "enumDescriptions": [
+            "Patrick Farrugia",
+            "Patrick",
+            "Farrugia",
+            "PF"
+          ],
           "default": "last",
           "description": "How to render the author name."
         },
