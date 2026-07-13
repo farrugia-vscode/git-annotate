@@ -1,12 +1,24 @@
-const fs = require('fs');
-const path = require('path');
-const vscode = require('vscode');
-const git = require('./git');
-const revision = require('./revision');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as vscode from 'vscode';
+import * as git from './git';
+import * as revision from './revision';
+import type { NameStatusEntry } from './types';
 
-const STATUS_ICON = { A: '$(diff-added)', D: '$(diff-removed)', M: '$(diff-modified)', R: '$(diff-renamed)', C: '$(diff-renamed)' };
+const STATUS_ICON: Record<string, string> = {
+  A: '$(diff-added)',
+  D: '$(diff-removed)',
+  M: '$(diff-modified)',
+  R: '$(diff-renamed)',
+  C: '$(diff-renamed)',
+};
 
-function fileUri(root, relpath) {
+interface DiffPair {
+  originalUri?: vscode.Uri;
+  modifiedUri?: vscode.Uri;
+}
+
+function fileUri(root: string, relpath: string): vscode.Uri {
   return vscode.Uri.file(path.join(root, relpath));
 }
 
@@ -14,7 +26,7 @@ function fileUri(root, relpath) {
 // For an added file we still point the original at the branch revision of newPath: it resolves
 // to '' (the file is absent there), which renders as a clean insertion instead of a phantom
 // deleted first line — the red band the undefined-original placeholder would produce.
-function diffPair(root, branch, entry) {
+function diffPair(root: string, branch: string, entry: NameStatusEntry): DiffPair {
   const originalPath = entry.oldPath || entry.newPath;
   return {
     originalUri: originalPath ? revision.buildRevisionUri(root, branch, originalPath) : undefined,
@@ -22,7 +34,7 @@ function diffPair(root, branch, entry) {
   };
 }
 
-async function pickBranch(root) {
+async function pickBranch(root: string): Promise<string | null> {
   const [branches, current] = await Promise.all([git.listBranches(root), git.currentBranch(root)]);
   const items = branches.filter((branch) => branch !== current).map((branch) => ({ label: branch }));
   if (items.length === 0) {
@@ -35,14 +47,14 @@ async function pickBranch(root) {
   return picked ? picked.label : null;
 }
 
-async function openFileDiff(root, branch, uri) {
+async function openFileDiff(root: string, branch: string, uri: vscode.Uri): Promise<void> {
   const relpath = path.relative(root, uri.fsPath);
   const left = revision.buildRevisionUri(root, branch, relpath);
   const title = `${path.basename(relpath)} (${branch} ↔ working)`;
   await vscode.commands.executeCommand('vscode.diff', left, uri, title);
 }
 
-async function fallbackQuickPick(root, branch, entries) {
+async function fallbackQuickPick(root: string, branch: string, entries: NameStatusEntry[]): Promise<void> {
   const items = entries.map((entry) => ({
     label: `${STATUS_ICON[entry.status] || ''} ${entry.newPath || entry.oldPath}`,
     entry,
@@ -56,14 +68,15 @@ async function fallbackQuickPick(root, branch, entries) {
   const { originalUri, modifiedUri } = diffPair(root, branch, picked.entry);
   await vscode.commands.executeCommand(
     'vscode.diff',
-    originalUri || revision.buildRevisionUri(root, branch, picked.entry.newPath),
+    originalUri || revision.buildRevisionUri(root, branch, picked.entry.newPath ?? ''),
     modifiedUri || originalUri,
     `${picked.label} (${branch} ↔ working)`,
   );
 }
 
-async function compareWithBranch(arg) {
-  const resource = arg instanceof vscode.Uri ? arg : vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.uri;
+export async function compareWithBranch(arg: unknown): Promise<void> {
+  const resource =
+    arg instanceof vscode.Uri ? arg : vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.uri;
   if (!resource || resource.scheme !== 'file') {
     vscode.window.showErrorMessage('Git Blame: select a file or folder to compare.');
     return;
@@ -94,15 +107,17 @@ async function compareWithBranch(arg) {
     try {
       await vscode.commands.executeCommand('_workbench.openMultiDiffEditor', {
         title: `Diff vs ${branch}`,
-        multiDiffSourceUri: vscode.Uri.from({ scheme: revision.SCHEME, path: '/diff', query: `ref=${encodeURIComponent(branch)}` }),
+        multiDiffSourceUri: vscode.Uri.from({
+          scheme: revision.SCHEME,
+          path: '/diff',
+          query: `ref=${encodeURIComponent(branch)}`,
+        }),
         resources,
       });
     } catch {
       await fallbackQuickPick(root, branch, entries);
     }
   } catch (error) {
-    vscode.window.showErrorMessage(`Git Blame: ${error.message}`);
+    vscode.window.showErrorMessage(`Git Blame: ${(error as Error).message}`);
   }
 }
-
-module.exports = { compareWithBranch };

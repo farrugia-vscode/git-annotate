@@ -22,10 +22,13 @@ See the extension settings (`gitAnnotate.*`) for formatting options.
 
 ```bash
 git clone git@github.com:farrugia-vscode/git-annotate.git ~/www/vscode-extensions/git-annotate
+cd ~/www/vscode-extensions/git-annotate
+bun install
+bun run build   # compiles TS → out/extension.js
 ln -s ~/www/vscode-extensions/git-annotate ~/.vscode/extensions/git-annotate
 ```
 
-Reload VS Code.
+Reload VS Code. Dev loop: `bun run watch` (rebuild on change), `bun run check` (type-check).
 
 ## License
 

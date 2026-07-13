@@ -1,16 +1,17 @@
 // Pure Node git helpers — no vscode dependency, so this module is unit-testable headless.
-const { execFile } = require('child_process');
-const { promisify } = require('util');
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import type { BlameEntry, NameStatusEntry } from './types';
 
 const execFileAsync = promisify(execFile);
 const MAX_BUFFER = 64 * 1024 * 1024;
 
-async function run(cwd, args) {
+async function run(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await execFileAsync('git', args, { cwd, maxBuffer: MAX_BUFFER, encoding: 'utf8' });
   return stdout;
 }
 
-async function getRepoRoot(cwd) {
+export async function getRepoRoot(cwd: string): Promise<string> {
   const root = (await run(cwd, ['rev-parse', '--show-toplevel'])).trim();
   if (!root) {
     throw new Error('Not a git repository');
@@ -18,13 +19,13 @@ async function getRepoRoot(cwd) {
   return root;
 }
 
-async function currentBranch(root) {
+export async function currentBranch(root: string): Promise<string> {
   return (await run(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
 }
 
-async function listBranches(root) {
+export async function listBranches(root: string): Promise<string[]> {
   const output = await run(root, ['branch', '-a', '--format=%(refname:short)']);
-  const seen = new Set();
+  const seen = new Set<string>();
   return output
     .split('\n')
     .map((line) => line.trim())
@@ -39,7 +40,7 @@ async function listBranches(root) {
 }
 
 // Returns the file content at a given revision, or '' when the path is absent there.
-async function showFile(root, rev, relpath) {
+export async function showFile(root: string, rev: string | null, relpath: string): Promise<string> {
   try {
     return await run(root, ['show', `${rev}:${relpath}`]);
   } catch {
@@ -47,9 +48,9 @@ async function showFile(root, rev, relpath) {
   }
 }
 
-function parseBlame(output) {
-  const entries = [];
-  let current = null;
+export function parseBlame(output: string): BlameEntry[] {
+  const entries: BlameEntry[] = [];
+  let current: BlameEntry | null = null;
   for (const raw of output.split('\n')) {
     if (raw.startsWith('\t')) {
       if (current) {
@@ -87,7 +88,7 @@ function parseBlame(output) {
 }
 
 // One entry per source line (0-indexed). rev = null blames the working tree.
-async function blame(root, rev, relpath) {
+export async function blame(root: string, rev: string | null, relpath: string): Promise<BlameEntry[]> {
   const args = ['blame', '--line-porcelain'];
   if (rev) {
     args.push(rev);
@@ -96,8 +97,8 @@ async function blame(root, rev, relpath) {
   return parseBlame(await run(root, args));
 }
 
-function parseNameStatus(output) {
-  const entries = [];
+export function parseNameStatus(output: string): NameStatusEntry[] {
+  const entries: NameStatusEntry[] = [];
   for (const line of output.split('\n')) {
     if (!line.trim()) {
       continue;
@@ -118,21 +119,10 @@ function parseNameStatus(output) {
 }
 
 // Changes from `ref` (original) to the working tree (modified), optionally scoped to a path.
-async function diffNameStatus(root, ref, relpath) {
+export async function diffNameStatus(root: string, ref: string, relpath?: string): Promise<NameStatusEntry[]> {
   const args = ['diff', '--name-status', '-M', ref, '--'];
   if (relpath) {
     args.push(relpath);
   }
   return parseNameStatus(await run(root, args));
 }
-
-module.exports = {
-  getRepoRoot,
-  currentBranch,
-  listBranches,
-  showFile,
-  blame,
-  diffNameStatus,
-  parseBlame,
-  parseNameStatus,
-};
