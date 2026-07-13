@@ -1,0 +1,116 @@
+{
+  "name": "git-annotate",
+  "displayName": "Git Annotate",
+  "description": "PHPStorm-style Git blame annotation, annotate previous revision, and compare with branch",
+  "version": "0.0.1",
+  "publisher": "farrugia",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["SCM Providers", "Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitAnnotate.toggle",
+        "title": "Git Blame: Toggle Annotation",
+        "category": "Git Blame"
+      },
+      {
+        "command": "gitAnnotate.annotatePrevious",
+        "title": "Git Blame: Annotate Previous Revision",
+        "category": "Git Blame"
+      },
+      {
+        "command": "gitAnnotate.compareWithBranch",
+        "title": "Compare with Branch…",
+        "category": "Git Blame"
+      },
+      {
+        "command": "gitAnnotate.showCommit",
+        "title": "Git Blame: Show Commit Diff",
+        "category": "Git Blame"
+      },
+      {
+        "command": "gitAnnotate.copyHash",
+        "title": "Git Blame: Copy Revision Hash",
+        "category": "Git Blame"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "gitAnnotate.showCommit", "when": "false" },
+        { "command": "gitAnnotate.copyHash", "when": "false" }
+      ],
+      "editor/context": [
+        { "command": "gitAnnotate.toggle", "group": "gitAnnotate@1", "when": "editorTextFocus" }
+      ],
+      "editor/lineNumber/context": [
+        { "command": "gitAnnotate.toggle", "group": "gitAnnotate@1" }
+      ],
+      "explorer/context": [
+        { "command": "gitAnnotate.compareWithBranch", "group": "3_compare@1" }
+      ]
+    },
+    "configuration": {
+      "title": "Git Annotate",
+      "properties": {
+        "gitAnnotate.autoAnnotate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show blame annotation automatically when opening a file (always-on). Off by default: PHPStorm-style manual toggle per file (commande Git Blame: Toggle Annotation)."
+        },
+        "gitAnnotate.template": {
+          "type": "string",
+          "default": "${date} ${author}",
+          "markdownDescription": "Annotation layout. Tokens: `${hash}`, `${date}`, `${author}`, `${email}`, `${summary}`. (Le hash reste visible dans le hover au survol.)"
+        },
+        "gitAnnotate.hashLength": {
+          "type": "integer",
+          "default": 8,
+          "minimum": 4,
+          "maximum": 40,
+          "description": "Number of characters of the commit hash to show."
+        },
+        "gitAnnotate.dateFormat": {
+          "type": "string",
+          "enum": ["iso", "short", "relative"],
+          "enumDescriptions": ["2026-07-12", "07/12", "3mo / 2y / today"],
+          "default": "iso",
+          "description": "How to render the commit date."
+        },
+        "gitAnnotate.authorFormat": {
+          "type": "string",
+          "enum": ["full", "first", "last", "initials"],
+          "enumDescriptions": ["Patrick Farrugia", "Patrick", "Farrugia", "PF"],
+          "default": "last",
+          "description": "How to render the author name."
+        },
+        "gitAnnotate.heatmap": {
+          "type": "boolean",
+          "default": true,
+          "description": "Color each line by commit age within the file (old → new)."
+        },
+        "gitAnnotate.heatmapOldColor": {
+          "type": "string",
+          "default": "#f14c4c",
+          "description": "Color of the oldest commit in the file (hex)."
+        },
+        "gitAnnotate.heatmapNewColor": {
+          "type": "string",
+          "default": "#4ec94e",
+          "description": "Color of the newest commit in the file (hex)."
+        },
+        "gitAnnotate.maxWidth": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 200,
+          "description": "Maximum width (characters) of the annotation column."
+        }
+      }
+    }
+  }
+}
