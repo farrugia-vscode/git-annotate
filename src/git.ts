@@ -59,7 +59,8 @@ export function parseBlame(output: string): BlameEntry[] {
       current = null;
       continue;
     }
-    const header = /^([0-9a-f]{40}) \d+ \d+(?: \d+)?$/.exec(raw);
+    // 40 hex chars for SHA-1 repos, 64 for SHA-256 repos.
+    const header = /^([0-9a-f]{40}|[0-9a-f]{64}) \d+ \d+(?: \d+)?$/.exec(raw);
     if (header) {
       current = { hash: header[1], isUncommitted: /^0+$/.test(header[1]) };
       continue;
