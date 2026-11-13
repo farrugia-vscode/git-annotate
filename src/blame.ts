@@ -26,8 +26,7 @@ function isLineArg(arg: unknown): arg is { uri: string; line: number } {
 
 /**
  * Owns the blame decoration type and the per-document annotation state, and
- * exposes the commands/handlers wired in extension.ts. Behaviour is identical
- * to the original module — only the shared state is now encapsulated here.
+ * exposes the commands/handlers wired in extension.ts.
  */
 export class BlameController {
   private readonly decorationType: vscode.TextEditorDecorationType;
@@ -109,11 +108,8 @@ export class BlameController {
   }
 
   private buildOptions(entries: BlameEntry[], ctx: Omit<HoverContext, 'line'>, config: Config): vscode.DecorationOptions[] {
-    const texts = entries.map((entry) => format.renderLineText(entry, config, false));
-    const width = Math.min(
-      config.maxWidth,
-      Math.max(1, ...texts.filter((text): text is string => text !== null).map((text) => text.length)),
-    );
+    const texts = entries.map((entry) => format.renderLineText(entry, config));
+    const width = Math.min(config.maxWidth, Math.max(1, ...texts.map((text) => text.length)));
 
     const times = entries
       .filter((entry) => !entry.isUncommitted && entry.authorTime)
@@ -124,7 +120,7 @@ export class BlameController {
 
     return entries.map((entry, index) => {
       const before: vscode.ThemableDecorationAttachmentRenderOptions = {
-        contentText: this.renderColumn(texts[index] || '', width),
+        contentText: this.renderColumn(texts[index], width),
       };
       if (config.heatmap) {
         let ratio = 1;
@@ -153,11 +149,7 @@ export class BlameController {
 
   private clear(uriString: string): void {
     this.annotated.delete(uriString);
-    for (const editor of vscode.window.visibleTextEditors) {
-      if (editor.document.uri.toString() === uriString) {
-        editor.setDecorations(this.decorationType, []);
-      }
-    }
+    this.applyToVisible(uriString);
   }
 
   refreshVisible(): void {

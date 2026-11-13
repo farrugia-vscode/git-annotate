@@ -43,11 +43,7 @@ export function formatDate(epochSec: number, mode: string): string {
   return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 }
 
-// Returns the annotation text for a line, or null for a continuation of the same commit.
-export function renderLineText(entry: BlameEntry, config: Config, isContinuation: boolean): string | null {
-  if (isContinuation) {
-    return null;
-  }
+export function renderLineText(entry: BlameEntry, config: Config): string {
   if (entry.isUncommitted) {
     return 'Uncommitted';
   }
