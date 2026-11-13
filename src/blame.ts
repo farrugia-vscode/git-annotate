@@ -18,6 +18,9 @@ interface HoverContext {
 }
 
 const COLUMN_SEP = '│';
+// Only our own command links may run from the hover. The commit text comes from the repo,
+// so a message like `[x](command:...)` must not run any other command.
+const HOVER_COMMANDS = ['gitAnnotate.annotatePrevious', 'gitAnnotate.showCommit', 'gitAnnotate.copyHash'];
 
 // A hover command-link argument ({uri, line}) as encoded in buildHover.
 function isLineArg(arg: unknown): arg is { uri: string; line: number } {
@@ -86,14 +89,17 @@ export class BlameController {
 
   private buildHover(entry: BlameEntry, ctx: HoverContext): vscode.MarkdownString {
     const hover = new vscode.MarkdownString(undefined, true);
-    hover.isTrusted = true;
+    hover.isTrusted = { enabledCommands: HOVER_COMMANDS };
     if (entry.isUncommitted) {
       hover.appendMarkdown('*Not committed yet*');
       return hover;
     }
     const date = new Date((entry.authorTime ?? 0) * 1000).toLocaleString();
-    hover.appendMarkdown(`**${entry.summary || ''}**\n\n`);
-    hover.appendMarkdown(`${entry.author}${entry.email ? ` <${entry.email}>` : ''}\n\n`);
+    hover.appendMarkdown('**');
+    hover.appendText(entry.summary || '');
+    hover.appendMarkdown('**\n\n');
+    hover.appendText(`${entry.author}${entry.email ? ` <${entry.email}>` : ''}`);
+    hover.appendMarkdown('\n\n');
     hover.appendMarkdown(`${date} · \`${entry.hash.slice(0, 8)}\`\n\n`);
 
     if (entry.previousHash) {
