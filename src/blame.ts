@@ -159,6 +159,12 @@ export class BlameController {
     this.applyToVisible(uriString);
   }
 
+  // A closed document drops its annotation. Else the map keeps every file ever annotated,
+  // and recomputeAll() would open them all again.
+  onDocClose(document: vscode.TextDocument): void {
+    this.annotated.delete(document.uri.toString());
+  }
+
   refreshVisible(): void {
     for (const editor of vscode.window.visibleTextEditors) {
       const record = this.annotated.get(editor.document.uri.toString());

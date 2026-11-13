@@ -18,6 +18,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.onDidChangeVisibleTextEditors(() => controller.refreshVisible()),
     vscode.window.onDidChangeActiveTextEditor((editor) => controller.maybeAutoAnnotate(editor)),
     vscode.workspace.onDidSaveTextDocument((document) => controller.onDocSave(document)),
+    vscode.workspace.onDidCloseTextDocument((document) => controller.onDocClose(document)),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('gitAnnotate')) {
         controller.recomputeAll();
