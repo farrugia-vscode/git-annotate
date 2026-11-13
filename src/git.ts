@@ -27,6 +27,28 @@ export async function locate(dir: string): Promise<RepoLocation> {
   return { root, relpath: (prefix ?? '').replace(/\/$/, '') };
 }
 
+const C_ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
+
+// Git writes a path with special bytes (non-ASCII, quote, backslash...) as a C string:
+// "caf\303\251.txt". This gives back the real path. Other paths come back as they are.
+export function unquotePath(raw: string): string {
+  if (!raw.startsWith('"') || !raw.endsWith('"') || raw.length < 2) {
+    return raw;
+  }
+  const bytes: number[] = [];
+  // Each match is an escape (`\303`, `\n`, ...) or a run of plain text.
+  for (const [, escape, text] of raw.slice(1, -1).matchAll(/\\([0-7]{3}|.)|([^\\]+)/gs)) {
+    if (text !== undefined) {
+      bytes.push(...Buffer.from(text, 'utf8'));
+    } else if (escape.length === 3) {
+      bytes.push(parseInt(escape, 8));
+    } else {
+      bytes.push(C_ESCAPES[escape] ?? escape.charCodeAt(0));
+    }
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
+
 export async function currentBranch(root: string): Promise<string> {
   return (await run(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
 }
@@ -90,7 +112,7 @@ export function parseBlame(output: string): BlameEntry[] {
     } else if (key === 'previous') {
       const parts = value.split(' ');
       current.previousHash = parts[0];
-      current.previousPath = parts.slice(1).join(' ');
+      current.previousPath = unquotePath(parts.slice(1).join(' '));
     }
   }
   return entries;
@@ -112,7 +134,7 @@ export function parseNameStatus(output: string): NameStatusEntry[] {
     if (!line.trim()) {
       continue;
     }
-    const parts = line.split('\t');
+    const parts = line.split('\t').map(unquotePath);
     const status = parts[0][0];
     if (status === 'R' || status === 'C') {
       entries.push({ status, oldPath: parts[1], newPath: parts[2] });
