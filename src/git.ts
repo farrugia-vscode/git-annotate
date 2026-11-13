@@ -6,8 +6,13 @@ import type { BlameEntry, NameStatusEntry } from './types';
 const execFileAsync = promisify(execFile);
 const MAX_BUFFER = 64 * 1024 * 1024;
 
-async function run(cwd: string, args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync('git', args, { cwd, maxBuffer: MAX_BUFFER, encoding: 'utf8' });
+// `input`, when given, is written to git's stdin.
+async function run(cwd: string, args: string[], input?: string): Promise<string> {
+  const promise = execFileAsync('git', args, { cwd, maxBuffer: MAX_BUFFER, encoding: 'utf8' });
+  if (input !== undefined) {
+    promise.child.stdin?.end(input);
+  }
+  const { stdout } = await promise;
   return stdout;
 }
 
@@ -121,13 +126,16 @@ export function parseBlame(output: string): BlameEntry[] {
 }
 
 // One entry per source line (0-indexed). rev = null blames the working tree.
-export async function blame(root: string, rev: string | null, relpath: string): Promise<BlameEntry[]> {
+// `contents` blames this text instead of the file on disk (an unsaved editor).
+export async function blame(root: string, rev: string | null, relpath: string, contents?: string): Promise<BlameEntry[]> {
   const args = ['blame', '--line-porcelain'];
   if (rev) {
     args.push(rev);
+  } else if (contents !== undefined) {
+    args.push('--contents', '-');
   }
   args.push('--', relpath);
-  return parseBlame(await run(root, args));
+  return parseBlame(await run(root, args, contents));
 }
 
 export function parseNameStatus(output: string): NameStatusEntry[] {

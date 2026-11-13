@@ -221,8 +221,15 @@ export class BlameController {
     return { root, rev: null, relpath: path.posix.join(relpath, path.basename(fsPath)) };
   }
 
+  // An unsaved editor is blamed on its text, not on the file on disk:
+  // else the lines would not match.
+  private blameDocument(document: vscode.TextDocument, target: RevisionTarget): Promise<BlameEntry[]> {
+    const contents = target.rev === null && document.isDirty ? document.getText() : undefined;
+    return git.blame(target.root, target.rev, target.relpath, contents);
+  }
+
   private async applyBlame(document: vscode.TextDocument, target: RevisionTarget): Promise<void> {
-    const entries = await git.blame(target.root, target.rev, target.relpath);
+    const entries = await this.blameDocument(document, target);
     const uriString = document.uri.toString();
     const options = this.buildOptions(entries, { uriString, root: target.root, relpath: target.relpath }, this.getConfig());
     this.annotated.set(uriString, { target, options });
@@ -323,7 +330,7 @@ export class BlameController {
 
       const document = await vscode.workspace.openTextDocument(documentUri);
       const target = await this.resolveTarget(document);
-      const entries = await git.blame(target.root, target.rev, target.relpath);
+      const entries = await this.blameDocument(document, target);
       const entry = entries[line];
       if (!entry || entry.isUncommitted) {
         vscode.window.showInformationMessage('Git Blame: line not committed yet.');
