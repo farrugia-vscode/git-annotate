@@ -17,6 +17,14 @@ interface HoverContext {
   line: number;
 }
 
+type CommitArg = {
+  root: string;
+  hash: string;
+  path: string;
+  previousHash?: string;
+  previousPath?: string;
+};
+
 const COLUMN_SEP = '│';
 // Only our own command links may run from the hover. The commit text comes from the repo,
 // so a message like `[x](command:...)` must not run any other command.
@@ -106,7 +114,14 @@ export class BlameController {
       const prevArgs = encodeURIComponent(JSON.stringify([{ uri: ctx.uriString, line: ctx.line }]));
       hover.appendMarkdown(`[$(history) Annotate previous](command:gitAnnotate.annotatePrevious?${prevArgs}) · `);
     }
-    const diffArgs = encodeURIComponent(JSON.stringify([{ root: ctx.root, hash: entry.hash, path: ctx.relpath }]));
+    const commitArg: CommitArg = {
+      root: ctx.root,
+      hash: entry.hash,
+      path: entry.filename ?? ctx.relpath,
+      previousHash: entry.previousHash,
+      previousPath: entry.previousPath,
+    };
+    const diffArgs = encodeURIComponent(JSON.stringify([commitArg]));
     hover.appendMarkdown(`[$(git-commit) Show diff](command:gitAnnotate.showCommit?${diffArgs}) · `);
     const copyArgs = encodeURIComponent(JSON.stringify([entry.hash]));
     hover.appendMarkdown(`[$(copy) Copy hash](command:gitAnnotate.copyHash?${copyArgs})`);
@@ -341,11 +356,15 @@ export class BlameController {
     }
   }
 
-  async showCommit(arg: { root: string; hash: string; path: string } | undefined): Promise<void> {
+  // `path` is the file name in that commit, and `previousPath` its name in the parent.
+  // Both differ from today's name when the file was renamed later.
+  async showCommit(arg: CommitArg | undefined): Promise<void> {
     if (!arg || !arg.hash) {
       return;
     }
-    const left = revision.buildRevisionUri(arg.root, `${arg.hash}^`, arg.path);
+    const left = arg.previousHash
+      ? revision.buildRevisionUri(arg.root, arg.previousHash, arg.previousPath ?? arg.path)
+      : revision.buildRevisionUri(arg.root, `${arg.hash}^`, arg.path);
     const right = revision.buildRevisionUri(arg.root, arg.hash, arg.path);
     const title = `${path.basename(arg.path)} @ ${arg.hash.slice(0, 8)}`;
     await vscode.commands.executeCommand('vscode.diff', left, right, title);

@@ -5,6 +5,8 @@ export interface BlameEntry {
   email?: string;
   authorTime?: number;
   summary?: string;
+  // Path of the file in this commit (differs from today's path after a rename).
+  filename?: string;
   previousHash?: string;
   previousPath?: string;
 }

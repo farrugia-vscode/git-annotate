@@ -109,6 +109,8 @@ export function parseBlame(output: string): BlameEntry[] {
       current.authorTime = parseInt(value, 10);
     } else if (key === 'summary') {
       current.summary = value;
+    } else if (key === 'filename') {
+      current.filename = unquotePath(value);
     } else if (key === 'previous') {
       const parts = value.split(' ');
       current.previousHash = parts[0];
