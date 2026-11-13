@@ -11,12 +11,20 @@ async function run(cwd: string, args: string[]): Promise<string> {
   return stdout;
 }
 
-export async function getRepoRoot(cwd: string): Promise<string> {
-  const root = (await run(cwd, ['rev-parse', '--show-toplevel'])).trim();
+export type RepoLocation = {
+  root: string;
+  // Path of `dir` inside the repo, with '/' and no trailing slash ('' at the root).
+  relpath: string;
+};
+
+// Git gives the prefix from its own view of `dir`. So this stays right when `dir` is reached
+// through a symlink, where path.relative(root, dir) would give a '../' path.
+export async function locate(dir: string): Promise<RepoLocation> {
+  const [root, prefix] = (await run(dir, ['rev-parse', '--show-toplevel', '--show-prefix'])).split('\n');
   if (!root) {
     throw new Error('Not a git repository');
   }
-  return root;
+  return { root, relpath: (prefix ?? '').replace(/\/$/, '') };
 }
 
 export async function currentBranch(root: string): Promise<string> {

@@ -47,8 +47,7 @@ async function pickBranch(root: string): Promise<string | null> {
   return picked ? picked.label : null;
 }
 
-async function openFileDiff(root: string, branch: string, uri: vscode.Uri): Promise<void> {
-  const relpath = path.relative(root, uri.fsPath);
+async function openFileDiff(root: string, branch: string, relpath: string, uri: vscode.Uri): Promise<void> {
   const left = revision.buildRevisionUri(root, branch, relpath);
   const title = `${path.basename(relpath)} (${branch} ↔ working)`;
   await vscode.commands.executeCommand('vscode.diff', left, uri, title);
@@ -85,19 +84,18 @@ export async function compareWithBranch(arg: unknown): Promise<void> {
   try {
     const fsPath = resource.fsPath;
     const isDirectory = fs.statSync(fsPath).isDirectory();
-    const root = await git.getRepoRoot(isDirectory ? fsPath : path.dirname(fsPath));
+    const { root, relpath: dirRelpath } = await git.locate(isDirectory ? fsPath : path.dirname(fsPath));
     const branch = await pickBranch(root);
     if (!branch) {
       return;
     }
 
     if (!isDirectory) {
-      await openFileDiff(root, branch, resource);
+      await openFileDiff(root, branch, path.posix.join(dirRelpath, path.basename(fsPath)), resource);
       return;
     }
 
-    const relpath = path.relative(root, fsPath);
-    const entries = await git.diffNameStatus(root, branch, relpath || undefined);
+    const entries = await git.diffNameStatus(root, branch, dirRelpath || undefined);
     if (entries.length === 0) {
       vscode.window.showInformationMessage(`Git Blame: no differences with ${branch}.`);
       return;

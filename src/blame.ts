@@ -202,8 +202,8 @@ export class BlameController {
       throw new Error('Only local files can be annotated');
     }
     const fsPath = document.uri.fsPath;
-    const root = await git.getRepoRoot(path.dirname(fsPath));
-    return { root, rev: null, relpath: path.relative(root, fsPath) };
+    const { root, relpath } = await git.locate(path.dirname(fsPath));
+    return { root, rev: null, relpath: path.posix.join(relpath, path.basename(fsPath)) };
   }
 
   private async applyBlame(document: vscode.TextDocument, target: RevisionTarget): Promise<void> {
