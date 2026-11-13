@@ -68,7 +68,9 @@ async function fallbackQuickPick(root: string, branch: string, entries: NameStat
   await vscode.commands.executeCommand(
     'vscode.diff',
     originalUri || revision.buildRevisionUri(root, branch, picked.entry.newPath ?? ''),
-    modifiedUri || originalUri,
+    // A deleted file has no working side: diff it against an empty document,
+    // so it shows as a full deletion like in the multi-diff editor.
+    modifiedUri || revision.buildEmptyUri(picked.entry.oldPath ?? ''),
     `${picked.label} (${branch} ↔ working)`,
   );
 }

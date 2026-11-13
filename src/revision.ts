@@ -11,6 +11,12 @@ export function buildRevisionUri(root: string, rev: string, relpath: string, lab
   return vscode.Uri.from({ scheme: SCHEME, path: '/' + (label || relpath), query });
 }
 
+// Read-only virtual URI with no content, used as the missing side of a diff
+// (for example the working side of a deleted file).
+export function buildEmptyUri(relpath: string): vscode.Uri {
+  return vscode.Uri.from({ scheme: SCHEME, path: '/' + relpath });
+}
+
 export function parseRevisionUri(uri: vscode.Uri): RevisionTarget {
   const params = new URLSearchParams(uri.query);
   return {
@@ -23,6 +29,10 @@ export function parseRevisionUri(uri: vscode.Uri): RevisionTarget {
 export class GitContentProvider implements vscode.TextDocumentContentProvider {
   provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
     const { root, rev, relpath } = parseRevisionUri(uri);
+    // No revision means an empty side (see buildEmptyUri).
+    if (!rev) {
+      return Promise.resolve('');
+    }
     return git.showFile(root, rev, relpath);
   }
 }
