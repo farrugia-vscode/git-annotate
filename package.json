@@ -20,6 +20,7 @@
     "build": "bun esbuild.ts",
     "watch": "bun esbuild.ts --watch",
     "check": "tsc -p . --noEmit",
+    "test": "bun test",
     "vscode:prepublish": "bun run build"
   },
   "contributes": {
