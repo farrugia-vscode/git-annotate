@@ -2,7 +2,7 @@
   "name": "git-annotate",
   "displayName": "Git Annotate",
   "description": "PHPStorm-style Git blame annotation, annotate previous revision, and compare with branch",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "farrugia",
   "icon": "icon.png",
   "engines": {
