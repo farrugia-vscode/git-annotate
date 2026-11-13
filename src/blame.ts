@@ -109,13 +109,20 @@ export class BlameController {
 
   private buildOptions(entries: BlameEntry[], ctx: Omit<HoverContext, 'line'>, config: Config): vscode.DecorationOptions[] {
     const texts = entries.map((entry) => format.renderLineText(entry, config));
-    const width = Math.min(config.maxWidth, Math.max(1, ...texts.map((text) => text.length)));
+    // No Math.max(...array): with ~150k lines it throws "Maximum call stack size exceeded".
+    const width = Math.min(
+      config.maxWidth,
+      texts.reduce((max, text) => Math.max(max, text.length), 1),
+    );
 
-    const times = entries
-      .filter((entry) => !entry.isUncommitted && entry.authorTime)
-      .map((entry) => entry.authorTime as number);
-    const oldest = Math.min(...times);
-    const newest = Math.max(...times);
+    let oldest = Infinity;
+    let newest = -Infinity;
+    for (const entry of entries) {
+      if (!entry.isUncommitted && entry.authorTime) {
+        oldest = Math.min(oldest, entry.authorTime);
+        newest = Math.max(newest, entry.authorTime);
+      }
+    }
     const isDark = this.isDarkTheme();
 
     return entries.map((entry, index) => {
